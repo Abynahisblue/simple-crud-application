@@ -1,6 +1,7 @@
 package com.crud_application.controller;
 
 
+import com.crud_application.httpRequests.LoginRequest;
 import com.crud_application.httpRequests.UserRequest;
 import com.crud_application.model.User;
 import com.crud_application.service.UserService;
@@ -35,9 +36,9 @@ public class UserController {
     }
 
     @PostMapping("/api/public/user/login")
-    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            User user = userService.loginUser(username, password);
+            Optional<User> user = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Login failed: " + e.getMessage());
