@@ -3,6 +3,7 @@ package com.crud_application.controller;
 
 import com.crud_application.httpRequests.LoginRequest;
 import com.crud_application.httpRequests.UserRequest;
+import com.crud_application.httpRequests.UserResponse;
 import com.crud_application.model.User;
 import com.crud_application.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -22,11 +23,11 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/api/public/user/register")
-    public ResponseEntity<User> registerUser(@RequestBody @Validated UserRequest userRequest) {
-        User user = userService.registerUser(userRequest);
-        return ResponseEntity.ok(user);
-    }
+//    @PostMapping("/api/public/user/register")
+//    public ResponseEntity<User> registerUser(@RequestBody @Validated UserRequest userRequest) {
+//        User user = userService.registerUser(userRequest);
+//        return ResponseEntity.ok(user);
+//    }
 
     @GetMapping("/api/private/user/{username}")
     public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
@@ -35,15 +36,6 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/api/public/user/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        try {
-            Optional<User> user = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body("Login failed: " + e.getMessage());
-        }
-    }
 
     @PutMapping("/api/private/user/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody @Validated UserRequest userRequest) {
@@ -56,8 +48,8 @@ public class UserController {
     }
 
     @GetMapping("/api/admin/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 }
