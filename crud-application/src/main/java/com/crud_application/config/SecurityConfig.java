@@ -33,8 +33,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF protection
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/authenticate", "/api/public/**").permitAll() // Public endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin role required for /api/admin/** endpoints
-                        .requestMatchers("/api/private/**").hasAnyRole("ADMIN", "USER") // Admin or User role required for /api/private/** endpoints
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN") // Admin role required for /api/admin/** endpoints
+                        .requestMatchers("/api/private/**").hasAnyAuthority("ADMIN", "USER") // Admin or User role required for /api/private/** endpoints
                         .anyRequest().authenticated() // All other requests require authentication
                 )
                 .sessionManagement(session -> session
