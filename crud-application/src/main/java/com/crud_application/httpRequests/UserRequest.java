@@ -3,6 +3,7 @@ package com.crud_application.httpRequests;
 
 import com.crud_application.enums.Role;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import lombok.Getter;
@@ -19,7 +20,7 @@ public class UserRequest {
     @Size(min = 8, message = "Password must be at least 8 characters long")
     private String password;
 
-    @NotEmpty(message = "Role is required")
+    @NotNull(message = "Role is required")
     private Role role;
 }
 
