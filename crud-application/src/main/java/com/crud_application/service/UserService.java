@@ -1,7 +1,7 @@
 package com.crud_application.service;
 
-import com.crud_application.enums.Role;
 import com.crud_application.httpRequests.UserRequest;
+import com.crud_application.httpRequests.UserResponse;
 import com.crud_application.model.User;
 import com.crud_application.repository.UserRepository;
 import com.crud_application.utils.JwtUtil;
@@ -9,7 +9,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,9 +17,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,14 +28,16 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     public Optional<User> findByUsername(String username) {
-        return Optional.ofNullable(userRepository.findByUsername(username));
+        return userRepository.findByUsername(username);
     }
 
     public User registerUser(UserRequest userRequest) {
@@ -50,15 +52,22 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found");
-        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                List.of(new SimpleGrantedAuthority(user.getRole().name()))
+                List.of(new SimpleGrantedAuthority(user.getRole().name())) // Adjust based on user roles/authorities
         );
+    }
+
+    public String generateTokenForUser(User user) {
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .authorities("USER", "ADMIN")  // Add roles/authorities as needed
+                .build();
+        return jwtUtil.generateToken(userDetails);
     }
 
     public User updateUser(Long id, UserRequest userRequest) {
@@ -79,21 +88,34 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    public User loginUser(String username, String password) throws AuthenticationException {
-        UserDetails userDetails = loadUserByUsername(username);
+    public String loginUser(String username, String password) throws AuthenticationException {
+        System.out.println("Attempting to log in user: " + username);
 
+        // Load user details
+        UserDetails userDetails = loadUserByUsername(username);
+        System.out.println("UserDetails: " + userDetails);
+
+        // Validate password
         if (userDetails == null || !passwordEncoder.matches(password, userDetails.getPassword())) {
+            System.out.println("UserDetails is null or password mismatch.");
             throw new BadCredentialsException("Invalid username or password");
         }
 
+        // Authenticate the user
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, password, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        return userRepository.findByUsername(username);
+        System.out.println("User authenticated successfully.");
+
+        // Generate JWT token
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found after authentication"));
+        return jwtUtil.generateToken(userDetails);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> new UserResponse(user.getUsername(), user.getRole().name()))
+                .collect(Collectors.toList());
     }
 
 }
